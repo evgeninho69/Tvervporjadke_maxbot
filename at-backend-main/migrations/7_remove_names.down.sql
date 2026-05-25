@@ -1,0 +1,5 @@
+ALTER TABLE public.user 
+ADD COLUMN first_name TEXT NOT NULL DEFAULT '';
+
+ALTER TABLE public.user
+ADD COLUMN second_name TEXT NOT NULL DEFAULT '';

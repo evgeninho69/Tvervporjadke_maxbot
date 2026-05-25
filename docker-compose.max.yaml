@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tveractive-postgres
+    environment:
+      POSTGRES_DB: tveractive
+      POSTGRES_USER: tveractive
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tveractive -d tveractive"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  core-api:
+    build:
+      context: ./core-api
+    container_name: core-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./core-api/.env
+    environment:
+      BUILD_ID: ${BUILD_ID:-local}
+      CORE_API_STORAGE: postgres
+      DATABASE_URL: postgres://tveractive:${POSTGRES_PASSWORD:-change_me}@postgres:5432/tveractive
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./max-bot-service/data:/app/data
+    restart: unless-stopped
+
+  max-bot-service:
+    build:
+      context: ./max-bot-service
+    container_name: max-bot-service
+    env_file:
+      - ./max-bot-service/.env
+    environment:
+      BUILD_ID: ${BUILD_ID:-local}
+      CORE_API_BASE_URL: http://core-api:8088
+      MAX_WEBHOOK_URL: ${MAX_WEBHOOK_URL:-http://localhost:8090/integrations/max/webhook}
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+
+  max-miniapp:
+    build:
+      context: ./max-miniapp
+    container_name: max-miniapp
+    env_file:
+      - ./max-miniapp/.env
+    ports:
+      - "5174:5174"
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5174"]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

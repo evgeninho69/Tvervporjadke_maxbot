@@ -1,0 +1,21 @@
+﻿# Deploy/cache
+.deploy/
+.runtime-logs/
+
+# Dependencies & build
+**/node_modules/
+**/dist/
+**/.next/
+
+# Runtime data
+max-bot-service/data/
+*.log
+
+# Env secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+core-api/.env
+max-bot-service/.env
+max-miniapp/.env

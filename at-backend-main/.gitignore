@@ -1,0 +1,9 @@
+.env
+.vscode
+files
+*.http
+*.jpeg
+*.jpg
+*.png
+testing
+testing.go

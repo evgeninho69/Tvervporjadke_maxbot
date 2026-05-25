@@ -1,0 +1,19 @@
+/* app/news/NewsPage.module.css */
+.truncate-overflow {
+  position: relative;
+  max-height: 4.5em; /* 3 строки */
+}
+
+.truncate-overflow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30%;
+  height: 1.2em;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 1) 50%
+  );
+}

@@ -1,0 +1,83 @@
+name: tveractive-iinnovator
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tveractive
+      POSTGRES_USER: tveractive
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tveractive -d tveractive"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  core-api:
+    build:
+      context: ./core-api
+      dockerfile: Dockerfile.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./core-api/.env
+    environment:
+      BUILD_ID: ${BUILD_ID:-iinnovator}
+      CORE_API_STORAGE: postgres
+      DATABASE_URL: postgres://tveractive:${POSTGRES_PASSWORD:-change_me}@postgres:5432/tveractive
+    restart: unless-stopped
+    volumes:
+      - bot_data:/app/data
+
+  max-bot-service:
+    build:
+      context: ./max-bot-service
+      dockerfile: Dockerfile.prod
+    depends_on:
+      - core-api
+    env_file:
+      - ./max-bot-service/.env
+    environment:
+      BUILD_ID: ${BUILD_ID:-iinnovator}
+      CORE_API_BASE_URL: http://core-api:8088
+      MAX_WEBHOOK_URL: ${MAX_WEBHOOK_URL:-https://iinnovator.website/integrations/max/webhook}
+      MAX_MINIAPP_URL: ${MAX_MINIAPP_URL:-https://iinnovator.website/max-miniapp/}
+    restart: unless-stopped
+    volumes:
+      - bot_data:/app/data
+
+  max-miniapp:
+    build:
+      context: ./max-miniapp
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://iinnovator.website}
+        VITE_ACTIVE_TVER_BEARER_TOKEN: ${VITE_ACTIVE_TVER_BEARER_TOKEN}
+        VITE_CHANNEL_HANDLE: ${VITE_CHANNEL_HANDLE}
+        VITE_CHANNEL_NAME: ${VITE_CHANNEL_NAME}
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/max-miniapp/}
+    restart: unless-stopped
+
+  edge:
+    image: caddy:2
+    depends_on:
+      - core-api
+      - max-bot-service
+      - max-miniapp
+    ports:
+      - "${IINNOVATOR_HTTP_BIND:-127.0.0.1}:${IINNOVATOR_HTTP_PORT:-18080}:80"
+    volumes:
+      - ./infra/Caddyfile.iinnovator:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  bot_data:
+  caddy_data:
+  caddy_config:

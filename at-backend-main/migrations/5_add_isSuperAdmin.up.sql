@@ -1,0 +1,1 @@
+ALTER TABLE "admin" ADD COLUMN "is_super_admin" BOOLEAN DEFAULT FALSE;

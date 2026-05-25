@@ -1,0 +1,36 @@
+{
+  auto_https off
+}
+
+:80 {
+  encode zstd gzip
+
+  @max_webhook path /integrations/max/webhook /integrations/max/webhook/*
+  @api path /v1/* /admin/v1/* /v2/* /admin/v2/* /internal/v2/*
+  @miniapp_root path /max-miniapp
+  @health path /healthz
+
+  handle @max_webhook {
+    reverse_proxy max-bot-service:8090
+  }
+
+  handle @api {
+    reverse_proxy core-api:8088
+  }
+
+  handle @miniapp_root {
+    redir /max-miniapp/ 302
+  }
+
+  handle_path /max-miniapp/* {
+    reverse_proxy max-miniapp:8080
+  }
+
+  handle @health {
+    reverse_proxy max-bot-service:8090
+  }
+
+  handle {
+    redir /max-miniapp/ 302
+  }
+}

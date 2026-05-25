@@ -1,0 +1,1 @@
+CREATE INDEX idx_claim_status ON public.claim (status);
